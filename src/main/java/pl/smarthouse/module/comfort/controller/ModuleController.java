@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.smarthouse.module.comfort.configuration.ModuleConfiguration;
 import pl.smarthouse.module.comfort.service.ModuleService;
 import pl.smarthouse.module.command.ModuleCommand;
-import pl.smarthouse.module.config.ModuleConfig;
+import pl.smarthouse.module.config.model.ModuleConfigDto;
 
 @AllArgsConstructor
 @RestController
@@ -16,8 +16,8 @@ public class ModuleController {
   ModuleService moduleService;
 
   @GetMapping(value = "/config", produces = "application/json")
-  public ModuleConfig getConfiguration() {
-    return moduleConfiguration.getModuleConfig();
+  public ModuleConfigDto getConfiguration() {
+    return moduleConfiguration.getModuleConfigDto();
   }
 
   @GetMapping(value = "/command", produces = "application/json")
