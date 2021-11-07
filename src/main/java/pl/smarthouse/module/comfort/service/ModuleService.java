@@ -48,7 +48,7 @@ public class ModuleService {
   public Mono<ModuleResponse> sendCommandToModule() {
     return webClient
         .post()
-        .uri("/action")
+        .uri(moduleConfig.getBaseIPAddress() + "/action")
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(getCommandBody())
         .retrieve()
@@ -58,9 +58,9 @@ public class ModuleService {
   public Mono<String> sendConfigurationToModule() {
     return webClient
         .post()
-        .uri("/configuration")
+        .uri(moduleConfig.getBaseIPAddress() + "/configuration")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(moduleConfig.getModuleConfig())
+        .bodyValue(moduleConfig.getModuleConfigDto())
         .retrieve()
         .bodyToMono(String.class);
   }

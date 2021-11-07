@@ -24,4 +24,18 @@ public class ModuleController {
   public ModuleCommand getCommand() {
     return moduleService.getCommandBody();
   }
+
+  // fixme only temorary to check communication with ESP32
+  @GetMapping(value = "/sendconfig", produces = "plain/text")
+  public String sendConfig() {
+    moduleService.sendConfigurationToModule();
+    return "OK";
+  }
+
+  // fixme only temorary to check communication with ESP32
+  @GetMapping(value = "/sendaction", produces = "plain/text")
+  public String sendAction() throws Exception {
+    moduleService.sendCommandToModule();
+    return "OK";
+  }
 }

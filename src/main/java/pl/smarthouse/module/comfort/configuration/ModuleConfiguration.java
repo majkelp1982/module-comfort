@@ -1,28 +1,42 @@
 package pl.smarthouse.module.comfort.configuration;
 
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import pl.smarthouse.module.GPO.enums.PinAction;
-import pl.smarthouse.module.GPO.enums.PinModes;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.reactive.function.client.WebClient;
 import pl.smarthouse.module.GPO.model.PinDao;
+import pl.smarthouse.module.comfort.service.ModuleManagerService;
 import pl.smarthouse.module.config.ModuleConfig;
 import pl.smarthouse.module.config.model.ModuleConfigDto;
 import pl.smarthouse.module.sensors.model.SensorDao;
 import pl.smarthouse.module.sensors.model.enums.SensorAction;
 import pl.smarthouse.module.sensors.model.sensorBME280SPI.SensorBME280SPIDao;
+import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static pl.smarthouse.module.comfort.constants.Module.MODULE_NAME;
 import static pl.smarthouse.module.comfort.constants.Module.VERSION;
-import static pl.smarthouse.module.comfort.constants.Pins.PIN_LIGHT_INTENSITY;
-import static pl.smarthouse.module.comfort.constants.Sensors.BME_ZEW;
+import static pl.smarthouse.module.comfort.constants.Sensors.BME280;
 
 @Configuration
+@Getter
+@Setter
 public class ModuleConfiguration {
+  // module mac address
+  public static final String MAC_ADDRESS = "3C:71:BF:4D:6A:40";
   private final ModuleConfig moduleConfig;
+  private String baseIPAddress;
 
-  public ModuleConfiguration() {
+  public ModuleConfiguration(final ModuleManagerService moduleManagerService) {
     moduleConfig =
         ModuleConfig.builder()
             .type(MODULE_NAME)
@@ -41,40 +55,32 @@ public class ModuleConfiguration {
   }
 
   private Set<PinDao> getPinsDao() {
+    // no pins needed
     final Set<PinDao> pinDaos = new HashSet<>();
-    pinDaos.add(
-        PinDao.builder()
-            .pinNumber(PIN_LIGHT_INTENSITY)
-            .mode(PinModes.ANALOG)
-            .action(PinAction.READ_ANALOG)
-            .build());
-
-    pinDaos.add(
-        PinDao.builder()
-            .pinNumber(1)
-            .mode(PinModes.OUTPUT)
-            .action(PinAction.READ)
-            .defaultLatchTime(1000)
-            .build());
-    pinDaos.add(
-        PinDao.builder()
-            .pinNumber(2)
-            .mode(PinModes.OUTPUT_OPEN_DRAIN)
-            .defaultLatchTime(1000)
-            .action(PinAction.READ)
-            .build());
-    pinDaos.add(PinDao.builder().pinNumber(3).mode(PinModes.INPUT).action(PinAction.READ).build());
-    pinDaos.add(
-        PinDao.builder().pinNumber(4).mode(PinModes.INPUT_PULLDOWN).action(PinAction.READ).build());
-    pinDaos.add(
-        PinDao.builder().pinNumber(6).mode(PinModes.INPUT_PULLUP).action(PinAction.READ).build());
     return pinDaos;
   }
 
   private Set<SensorDao> getSensorsDao() {
     final Set<SensorDao> sensorDaoSet = new HashSet<>();
     sensorDaoSet.add(
-        SensorBME280SPIDao.builder().name(BME_ZEW).csPin(13).action(SensorAction.READ).build());
+        SensorBME280SPIDao.builder().name(BME280).csPin(4).action(SensorAction.READ).build());
     return sensorDaoSet;
+  }
+
+  @Bean
+  WebClient webClient() {
+    return WebClient.builder()
+        .clientConnector(new ReactorClientHttpConnector(httpClient()))
+        .build();
+  }
+
+  private HttpClient httpClient() {
+    return HttpClient.create()
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+        .responseTimeout(Duration.ofMillis(5000))
+        .doOnConnected(
+            conn ->
+                conn.addHandlerLast(new ReadTimeoutHandler(5000, TimeUnit.MILLISECONDS))
+                    .addHandlerLast(new WriteTimeoutHandler(5000, TimeUnit.MILLISECONDS)));
   }
 }
