@@ -32,7 +32,7 @@ import static pl.smarthouse.module.comfort.constants.Sensors.BME280;
 @Setter
 public class ModuleConfiguration {
   // module mac address
-  public static final String MAC_ADDRESS = "3C:71:BF:4D:6A:40";
+  public static final String MAC_ADDRESS = "3C:71:BF:4D:77:C8";
   private final ModuleConfig moduleConfig;
   private String baseIPAddress;
 

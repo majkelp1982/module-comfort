@@ -1,20 +1,19 @@
 package pl.smarthouse.module.comfort.service;
 
-import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import pl.smarthouse.loghandler.configuration.LogConfiguration;
 import pl.smarthouse.loghandler.model.ErrorDto;
 import pl.smarthouse.loghandler.model.InfoDto;
 import reactor.core.publisher.Mono;
 
 @Service
-@AllArgsConstructor
 public class LogService {
-  WebClient logWebClient;
+  LogConfiguration logConfiguration = new LogConfiguration();
 
   public Mono<String> error(final ErrorDto errorDto) {
-    return logWebClient
+    return logConfiguration
+        .webClient()
         .post()
         .uri("/error")
         .contentType(MediaType.APPLICATION_JSON)
@@ -24,7 +23,8 @@ public class LogService {
   }
 
   public Mono<String> info(final InfoDto infoDto) {
-    return logWebClient
+    return logConfiguration
+        .webClient()
         .post()
         .uri("/info")
         .contentType(MediaType.APPLICATION_JSON)

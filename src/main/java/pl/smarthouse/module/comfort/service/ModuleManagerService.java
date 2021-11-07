@@ -1,17 +1,17 @@
 package pl.smarthouse.module.comfort.service;
 
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import pl.smarthouse.modulemanager.configuration.ModuleManagerConfiguration;
 import reactor.core.publisher.Mono;
 
 @Service
-@AllArgsConstructor
 public class ModuleManagerService {
-  WebClient moduleManagerWebClient;
+  ModuleManagerConfiguration moduleManagerConfiguration = new ModuleManagerConfiguration();
 
   public Mono<String> getDBModuleIpAddress(final String macAddress) {
-    return moduleManagerWebClient
+
+    return moduleManagerConfiguration
+        .webClient()
         .get()
         .uri("/ip?macAddress=" + macAddress)
         .retrieve()
