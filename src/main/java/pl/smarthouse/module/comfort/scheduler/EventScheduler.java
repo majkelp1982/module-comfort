@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import pl.smarthouse.module.comfort.configuration.ModuleConfiguration;
 import pl.smarthouse.module.comfort.service.ActionService;
@@ -16,6 +17,7 @@ import pl.smarthouse.module.utils.ModelMapper;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import java.net.ConnectException;
 import java.time.Duration;
 
 import static pl.smarthouse.module.comfort.configuration.ModuleConfiguration.MAC_ADDRESS;
@@ -24,6 +26,10 @@ import static pl.smarthouse.module.comfort.configuration.ModuleConfiguration.MAC
 @AllArgsConstructor
 @Service
 public class EventScheduler {
+
+  private static final String NO_IP_FOUND = "No IP found for mac address %s";
+  private static final int MAX_RETRY_MS = 10 * 60 * 1000;
+  private static int retryMs = 5000;
   ModuleConfiguration moduleConfig;
   ModuleService moduleService;
   ActionService actionService;
@@ -34,13 +40,26 @@ public class EventScheduler {
   public void eventScheduler() {
     Mono.justOrEmpty(moduleConfig.getBaseIPAddress())
         .switchIfEmpty(moduleManagerService.getDBModuleIpAddress(MAC_ADDRESS))
-        .doOnSuccess(ip -> moduleConfig.setBaseIPAddress(ip))
+        .switchIfEmpty(Mono.error(new ConnectException(String.format(NO_IP_FOUND, MAC_ADDRESS))))
+        .doOnSuccess((ip) -> moduleConfig.setBaseIPAddress(ip))
         .doOnError(
             throwable -> {
-              System.out.println(throwable.getCause().getMessage());
+              logService.error(LogUtils.error(throwable.getMessage())).subscribe();
             })
-        .retryWhen(Retry.fixedDelay(10, Duration.ofMillis(1000)))
-        .then(moduleService.sendCommandToModule())
+        .retryWhen(Retry.fixedDelay(1, Duration.ofMillis(retryMs)))
+        .doOnSuccess(ignore -> retryMs = 1000)
+        .doOnError(
+            throwable -> {
+              retryMs = retryMs * 2;
+              if (retryMs > MAX_RETRY_MS) {
+                retryMs = MAX_RETRY_MS;
+              }
+              logService.error(LogUtils.error(throwable.getMessage())).subscribe();
+            })
+        .block();
+
+    moduleService
+        .sendCommandToModule()
         .doOnError(
             WebClientResponseException.class,
             ex -> {
@@ -51,9 +70,14 @@ public class EventScheduler {
               }
             })
         .doOnError(
+            WebClientRequestException.class,
+            ex -> {
+              logService.error(LogUtils.error(ex.getMessage())).subscribe();
+            })
+        .doOnError(
             throwable -> {
               logService.error(LogUtils.error(throwable.getMessage())).subscribe();
-              System.out.println(throwable.getCause().getMessage());
+              moduleConfig.setBaseIPAddress(null);
             })
         .doOnSuccess(
             moduleResponse -> {

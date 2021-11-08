@@ -27,12 +27,12 @@ public class ExternalModuleConfiguration {
   private HttpClient httpClient() {
     return HttpClient.create()
         // TODO later need to be get from ARP protocol or some settings. Can't be a const
-        .baseUrl("192.168.0.168:9090")
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+        .baseUrl("192.168.0.164:9090")
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
         .responseTimeout(Duration.ofMillis(5000))
         .doOnConnected(
             conn ->
-                conn.addHandlerLast(new ReadTimeoutHandler(5000, TimeUnit.MILLISECONDS))
-                    .addHandlerLast(new WriteTimeoutHandler(5000, TimeUnit.MILLISECONDS)));
+                conn.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS))
+                    .addHandlerLast(new WriteTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
   }
 }

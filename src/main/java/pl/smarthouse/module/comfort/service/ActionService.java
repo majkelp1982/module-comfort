@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import pl.smarthouse.module.comfort.configuration.ModuleConfiguration;
+import pl.smarthouse.module.comfort.utils.LogUtils;
 import pl.smarthouse.module.sensors.model.sensorBME280SPI.SensorBME280SPIDao;
 import pl.smarthouse.module.sensors.model.sensorBME280SPI.SensorBME280SPIResponse;
 import pl.smarthouse.module.utils.ModelMapper;
@@ -19,6 +20,7 @@ public class ActionService {
 
   ModuleConfiguration moduleConfig;
   ExternalModuleService externalModuleService;
+  LogService logService;
 
   public void actionService() {
     final SensorBME280SPIDao bme280 =
@@ -34,11 +36,11 @@ public class ActionService {
     System.out.println(" " + sensorBME280Resp.toString());
     externalModuleService
         .sendBME280DataToExternalModule(sensorBME280Resp)
-        .doOnError(error -> System.out.println(error.getMessage()))
         .doOnSuccess(
             s -> {
               System.out.println(s);
             })
+        .doOnError(error -> logService.error(LogUtils.error(error.getMessage())).subscribe())
         .subscribe();
   }
 }

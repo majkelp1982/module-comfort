@@ -11,7 +11,8 @@ import reactor.core.publisher.Mono;
 public class LogService {
   LogConfiguration logConfiguration = new LogConfiguration();
 
-  public Mono<String> error(final ErrorDto errorDto) {
+  public Mono<ErrorDto> error(final ErrorDto errorDto) {
+    System.out.println(errorDto.toString());
     return logConfiguration
         .webClient()
         .post()
@@ -19,10 +20,10 @@ public class LogService {
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(errorDto)
         .retrieve()
-        .bodyToMono(String.class);
+        .bodyToMono(ErrorDto.class);
   }
 
-  public Mono<String> info(final InfoDto infoDto) {
+  public Mono<InfoDto> info(final InfoDto infoDto) {
     return logConfiguration
         .webClient()
         .post()
@@ -30,6 +31,6 @@ public class LogService {
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(infoDto)
         .retrieve()
-        .bodyToMono(String.class);
+        .bodyToMono(InfoDto.class);
   }
 }

@@ -16,8 +16,10 @@ import pl.smarthouse.module.config.model.ModuleConfigDto;
 import pl.smarthouse.module.sensors.model.SensorDao;
 import pl.smarthouse.module.sensors.model.enums.SensorAction;
 import pl.smarthouse.module.sensors.model.sensorBME280SPI.SensorBME280SPIDao;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
+import java.net.ConnectException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,8 +30,8 @@ import static pl.smarthouse.module.comfort.constants.Module.VERSION;
 import static pl.smarthouse.module.comfort.constants.Sensors.BME280;
 
 @Configuration
-@Getter
 @Setter
+@Getter
 public class ModuleConfiguration {
   // module mac address
   public static final String MAC_ADDRESS = "3C:71:BF:4D:77:C8";
@@ -82,5 +84,11 @@ public class ModuleConfiguration {
             conn ->
                 conn.addHandlerLast(new ReadTimeoutHandler(5000, TimeUnit.MILLISECONDS))
                     .addHandlerLast(new WriteTimeoutHandler(5000, TimeUnit.MILLISECONDS)));
+  }
+
+  public Mono<String> getModuleURL() {
+    return Mono.justOrEmpty(baseIPAddress)
+        .switchIfEmpty(Mono.error(new ConnectException("Host ip not ready")))
+        .map(ip -> "http://" + baseIPAddress);
   }
 }
